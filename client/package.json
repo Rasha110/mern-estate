@@ -12,6 +12,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.6.0",
     "@tailwindcss/vite": "^4.0.9",
+    "firebase": "^11.4.0",
     "persist": "^0.2.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
