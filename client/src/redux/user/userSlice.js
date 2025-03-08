@@ -20,6 +20,7 @@ const userSlice=createSlice({
         signInFailure:(state,action)=>{
             state.error=action.payload;
             state.loading=false; 
+            localStorage.removeItem('user'); 
         }
     }
 });
