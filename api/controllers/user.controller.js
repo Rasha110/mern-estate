@@ -17,6 +17,7 @@ try{
     }
     const updatedUser=await User.findByIdAndUpdate(req.params.id,{
         $set:{
+            _id: user._id, 
             username:req.body.username,
             email:req.body.email,
             password:req.body.password,
@@ -28,5 +29,6 @@ try{
 }
 catch(err){
     next (err)
+    res.status(500).json({ message: error.message });
 }
 }

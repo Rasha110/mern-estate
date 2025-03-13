@@ -1,9 +1,10 @@
 import {createSlice} from '@reduxjs/toolkit'
-const initialState={
-    currentUser:null,
-    error:null,
-    loading:false
-};
+const initialState = {
+    currentUser: null,
+    error: null,
+    loading: false,
+  };
+  
 const userSlice=createSlice({
     name:'user',
     initialState,
@@ -12,17 +13,39 @@ const userSlice=createSlice({
             state.loading=true;
             
         },
-        signInSuccess:(state,action)=>{
-            state.currentUser=action.payload;
-            state.loading=false;
-            state.error=null;
-        },
+        signInSuccess: (state, action) => {
+            console.log(" Redux Payload:", action.payload); 
+            if (!action.payload || !action.payload._id) {
+              console.error(" Redux Error: User ID is missing!", action.payload);
+              return;
+            }
+            state.currentUser = action.payload;
+            localStorage.setItem("user", JSON.stringify(state.currentUser));
+          },
+        
         signInFailure:(state,action)=>{
             state.error=action.payload;
             state.loading=false; 
             localStorage.removeItem('user'); 
+        },
+        updateUserStart:(state)=>{
+            state.loading=true;
         }
+        ,
+        updateUserSuccess:(state,action)=>{
+            state.currentUser={ ...state.currentUser, ...action.payload };
+            localStorage.setItem("user", JSON.stringify(state.currentUser)); 
+            state.loading=false;
+            state.error=null;
+        }
+        ,
+        updateUserFailure:(state,action)=>{
+            state.error=action.payload;
+            state.loading=false;
+        }
+
+    ,
     }
 });
-export const{signInStart,signInSuccess,signInFailure}=userSlice.actions;
+export const{signInStart,signInSuccess,signInFailure,updateUserStart,updateUserSuccess,updateUserFailure}=userSlice.actions;
 export default userSlice.reducer;
