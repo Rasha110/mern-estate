@@ -3,11 +3,12 @@ import { useSelector } from "react-redux";
 import { updateUserStart, updateUserFailure, updateUserSuccess } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux";
 import { updateUser } from "../../../api/controllers/user.controller";
-
+import { Navigate } from "react-router-dom";
+import {Link} from 'react-router-dom'
 function Profile() {
   const dispatch = useDispatch();
   const fileRef = useRef(null);
-  const { currentUser } = useSelector((state) => state.user);
+  const { currentUser,loading,error } = useSelector((state) => state.user);
   if (!currentUser) {
     return <div>Loading...</div>;
   }
@@ -16,7 +17,7 @@ function Profile() {
   const [fileUploadSuccess, setFileUploadSuccess] = useState(false);
   const [fileUploadError, setFileUploadError] = useState(false);
   const [filePerc, setFilePerc] = useState(0);
-
+const [updateSuccess,setUpdateSuccess]=useState(false)
   // Initialize formData with currentUser values
   const [formData, setFormData] = useState({
     username: currentUser?.username || "",
@@ -74,27 +75,14 @@ function Profile() {
   };
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.id]: e.target.value, 
-    }));
+    setFormData({ ...formData, [e.target.id]: e.target.value });
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    if (!currentUser || !currentUser._id) {
-      console.error("Missing User ID. Cannot proceed.");
-      return;
-    }
   
     try {
       dispatch(updateUserStart());
-      const updateData = {
-        username: formData.username,
-        email: formData.email,
-       
-        avatar: image,
-      };
       const res = await fetch(`/api/user/update/${currentUser._id}`, {
         method: 'POST',
         headers: {
@@ -102,18 +90,19 @@ function Profile() {
          
         }
         ,
-        body: JSON.stringify({...formData,avatar:image}),
+        body: JSON.stringify(formData),
       });
   
       const data = await res.json();
-      if (!res.ok) {
-        dispatch(updateUserFailure(data.message || "Update failed"));
+      if (data.success === false) {
+        dispatch(updateUserFailure(data.message));
         return;
       }
   
       dispatch(updateUserSuccess(data));
+     setUpdateSuccess(true)
     } catch (error) {
-      console.error("Caught error:", error);
+  
       dispatch(updateUserFailure(error.message));
     }
   };
@@ -131,11 +120,11 @@ function Profile() {
         />
         <p className="text-sm self-center">
           {fileUploadError ? (
-            <span className="text-red-700">Error: Image Upload Failed ❌</span>
+            <span className="text-red-700">Error: Image Upload Failed </span>
           ) : filePerc > 0 && filePerc < 100 ? (
             <span className="text-slate-700">{`Uploading... ${filePerc}%`}</span>
           ) : fileUploadSuccess ? (
-            <span className="text-green-700">Image Uploaded Successfully ✅</span>
+            <span className="text-green-700">Image Uploaded Successfully </span>
           ) : (
             ""
           )}
@@ -151,7 +140,7 @@ function Profile() {
           onChange={handleChange}
         />
         <input
-          type="text"
+          type="email"
           placeholder="Email"
           value={formData.email}
           id="email"
@@ -168,7 +157,7 @@ function Profile() {
         />
 
         <button className="bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disabled:opacity-80">
-          Update
+          {loading ? 'Loading...': 'Update'}
         </button>
       </form>
 
@@ -176,6 +165,8 @@ function Profile() {
         <span className="text-red-700 cursor-pointer">Delete Account</span>
         <span className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
+      <p className="text-red-700 mt-5">{error ? error : ''}</p>
+      <p className="text-green-700 mt-5">{updateSuccess ? 'User is updated Successfully!' : ''}</p>
     </div>
   );
 }
