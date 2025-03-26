@@ -1,17 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { updateUserStart, updateUserFailure, updateUserSuccess } from "../redux/user/userSlice";
+import { updateUserStart, updateUserFailure, updateUserSuccess, deleteUserFailure, deleteUserStart, deleteUserSuccess } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux";
 import { updateUser } from "../../../api/controllers/user.controller";
 import { Navigate } from "react-router-dom";
 import {Link} from 'react-router-dom'
 function Profile() {
   const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(true);
   const fileRef = useRef(null);
   const { currentUser,loading,error } = useSelector((state) => state.user);
-  if (!currentUser) {
-    return <div>Loading...</div>;
+
+  
+
+useEffect(() => {
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  if (storedUser) {
+    dispatch(updateUserSuccess(storedUser)); // ✅ Update Redux state from localStorage
   }
+}, [dispatch]);
+  if (!currentUser) {
+    return <div>Loading..</div>;
+  }
+ 
+  
+  
   const [image, setImage] = useState(currentUser?.avatar || "");
   const [file, setFile] = useState(null);
   const [fileUploadSuccess, setFileUploadSuccess] = useState(false);
@@ -24,7 +37,7 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
     email: currentUser?.email || "",
     password: "",
   });
-  
+ 
 
   // Handles file upload
   const uploadImage = async (file) => {
@@ -81,32 +94,60 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
     e.preventDefault();
   
   
+    if (!currentUser || !currentUser._id) {
+      console.error("Error: currentUser or _id is undefined");
+      return;
+    }
+  
     try {
       dispatch(updateUserStart());
+  
       const res = await fetch(`/api/user/update/${currentUser._id}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-         
-        }
-        ,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`, // Send token if required
+        },
         body: JSON.stringify(formData),
       });
   
       const data = await res.json();
-      if (data.success === false) {
-        dispatch(updateUserFailure(data.message));
+      if (!res.ok) {
+        dispatch(updateUserFailure(data.message || "Update failed"));
         return;
       }
   
       dispatch(updateUserSuccess(data));
-     setUpdateSuccess(true)
+      localStorage.setItem("user", JSON.stringify(data));
+      //setUpdateSuccess(true);
     } catch (error) {
-  
       dispatch(updateUserFailure(error.message));
     }
   };
   
+    
+  const handleDeleteUser=async()=>{
+    if (!currentUser || !currentUser._id) {
+      console.error("Error: currentUser or _id is undefined");
+      return;
+    }
+    try{
+      dispatch(deleteUserStart());
+      const res=await fetch(`/api/user/delete/${currentUser._id}`,{
+        method:'DELETE',
+      });
+      const data=await res.json();
+      if (data.success===false){
+        dispatch(deleteUserFailure(data.message));
+        return;
+      }
+      dispatch(deleteUserSuccess(data))
+      localStorage.removeItem("user");
+    }
+    catch(error){
+      dispatch(deleteUserFailure(error.message))
+    }
+  }
   return (
     <div className="p-3 mx-auto max-w-lg">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
@@ -134,15 +175,15 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
         <input
           type="text"
           placeholder="Username"
-          value={formData.username}
+          defaultValue={currentUser.username}
           id="username"
           className="border p-3 rounded-lg"
           onChange={handleChange}
         />
         <input
           type="email"
-          placeholder="Email"
-          value={formData.email}
+          placeholder="email"
+          defaultValue={currentUser.email}
           id="email"
           className="border p-3 rounded-lg"
           onChange={handleChange}
@@ -150,7 +191,7 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
         <input
           type="password"
           placeholder="Password"
-          value={formData.password}
+       
           id="password"
           className="border p-3 rounded-lg"
           onChange={handleChange}
@@ -162,7 +203,7 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
       </form>
 
       <div className="flex justify-between mt-5">
-        <span className="text-red-700 cursor-pointer">Delete Account</span>
+        <span onClick={handleDeleteUser} className="text-red-700 cursor-pointer">Delete Account</span>
         <span className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
       <p className="text-red-700 mt-5">{error ? error : ''}</p>

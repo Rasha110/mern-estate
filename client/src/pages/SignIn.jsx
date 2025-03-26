@@ -33,6 +33,7 @@ const handleSubmit=async (e)=>{
       return;
     }
     dispatch(signInSuccess(data))
+    localStorage.setItem("user", JSON.stringify(data));
     navigate('/')
   }
   catch(error){
