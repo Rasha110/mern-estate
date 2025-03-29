@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { updateUserStart, updateUserFailure, updateUserSuccess, deleteUserFailure, deleteUserStart, deleteUserSuccess } from "../redux/user/userSlice";
+import { updateUserStart, updateUserFailure, updateUserSuccess, deleteUserFailure, deleteUserStart, deleteUserSuccess,signOutUserStart,signOutUserFailure,signOutUserSuccess } from "../redux/user/userSlice";
 import { useDispatch } from "react-redux";
 import { updateUser } from "../../../api/controllers/user.controller";
 import { Navigate } from "react-router-dom";
@@ -148,6 +148,30 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
       dispatch(deleteUserFailure(error.message))
     }
   }
+  const handleSignOut=async()=>{
+    try{
+      dispatch(signOutUserStart());
+const res=await fetch('/api/auth/signout');
+if (!res.ok) {
+  const errorText = await res.text(); // Read response as text
+  console.error("Signout failed:", errorText); 
+  dispatch(signOutUserFailure("Signout failed. Server response: " + errorText));
+  return;}
+const data=await res.json();
+if (data.success===false){
+  dispatch(deleteUserFailure(data.message));
+  return;
+}
+    dispatch(deleteUserSuccess())
+  localStorage.removeItem("user");
+
+  // ✅ Redirect after account deletion
+  window.location.href = "/login"; 
+}
+    catch(err){
+dispatch(deleteUserFailure(err.message))
+    }
+  }
   return (
     <div className="p-3 mx-auto max-w-lg">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
@@ -204,7 +228,7 @@ const [updateSuccess,setUpdateSuccess]=useState(false)
 
       <div className="flex justify-between mt-5">
         <span onClick={handleDeleteUser} className="text-red-700 cursor-pointer">Delete Account</span>
-        <span className="text-red-700 cursor-pointer">Sign Out</span>
+        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
       <p className="text-red-700 mt-5">{error ? error : ''}</p>
       <p className="text-green-700 mt-5">{updateSuccess ? 'User is updated Successfully!' : ''}</p>
